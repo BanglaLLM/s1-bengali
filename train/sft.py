@@ -79,6 +79,9 @@ def train():
     tokenizer.save_pretrained(args.output_dir)
     trainer.accelerator.wait_for_everyone()
 
+    model_name = args.train_file_path.replace("_tokenized", "")
+    trainer.push_to_hub(dataset_name=model_name)
+
 
 if __name__ == "__main__":
     train()
