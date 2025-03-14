@@ -1,10 +1,4 @@
 # Set environment variables for better multi-GPU performance
-export NCCL_DEBUG=INFO
-export NCCL_IB_DISABLE=0
-export NCCL_IB_GID_INDEX=3
-export NCCL_NET_GDR_LEVEL=2
-
-uid="$(date +%Y%m%d_%H%M%S)"
 base_model="Qwen/QwQ-32B"
 dataset_name="BanglaLLM/s1k-Bangla_tokenized-qwq32b"
 lr=1e-5
@@ -21,7 +15,7 @@ push_to_hub=false
 # Clear GPU cache before starting
 nvidia-smi -r
 
-torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
+torchrun --nproc-per-node ${gpu_count} --nccl_p2p_disable=0 --nccl_ib_disable=0 --master_port 12345 \
     train/sft.py \
     --block_size=${block_size} \
     --per_device_train_batch_size=${micro_batch_size} \
@@ -46,4 +40,4 @@ torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     --push_to_hub=${push_to_hub} \
     --save_only_model=True \
     --gradient_checkpointing=True \
-    --optim="paged_adamw_32bit"
+    --optim="paged_adamddw_32bit"
