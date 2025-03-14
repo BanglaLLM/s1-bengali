@@ -1,21 +1,29 @@
-# Reference Running: bash train/sft.sh
-# {'train_runtime': 5268.8407, 'train_samples_per_second': 0.949, 'train_steps_per_second': 0.119, 'train_loss': 0.1172730620391667, 'epoch': 5.0}
+# Set environment variables for better multi-GPU performance
+export NCCL_DEBUG=INFO
+export NCCL_IB_DISABLE=0
+export NCCL_IB_GID_INDEX=3
+export NCCL_NET_GDR_LEVEL=2
+
 uid="$(date +%Y%m%d_%H%M%S)"
 base_model="Qwen/QwQ-32B"
 dataset_name="BanglaLLM/s1k-Bangla_tokenized-qwq32b"
 lr=1e-5
 min_lr=0
 epochs=5
-weight_decay=1e-4 # -> the same training pipe as slurm_training
-micro_batch_size=1 # -> batch_size will be 16 if 16 gpus
-gradient_accumulation_steps=1 # requires more GPU memory
+weight_decay=1e-4
+micro_batch_size=1
+gradient_accumulation_steps=1  # With H200, this should be fine at 1
+block_size=16384  # Start with a moderate block size and scale up if successful
 max_steps=-1
 gpu_count=$(nvidia-smi -L | wc -l)
 push_to_hub=false
 
+# Clear GPU cache before starting
+nvidia-smi -r
+
 torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     train/sft.py \
-    --block_size=32768 \
+    --block_size=${block_size} \
     --per_device_train_batch_size=${micro_batch_size} \
     --per_device_eval_batch_size=${micro_batch_size} \
     --gradient_accumulation_steps=${gradient_accumulation_steps} \
@@ -37,7 +45,5 @@ torchrun --nproc-per-node ${gpu_count} --master_port 12345 \
     --output_dir="ckpts/s1-${uid}" \
     --push_to_hub=${push_to_hub} \
     --save_only_model=True \
-    --gradient_checkpointing=True
-    #  \ Enable gradient checkpointing for efficient memory usage with 8 H100 GPUs.
-    # --accelerator_config='{"gradient_accumulation_kwargs": {"sync_each_batch": true}}'
-
+    --gradient_checkpointing=True \
+    --optim="paged_adamw_32bit"

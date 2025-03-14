@@ -13,7 +13,7 @@ import trl
 class TrainingConfig:
     model_name: str = field(default="Qwen/Qwen2.5-32B-Instruct")
     block_size: int = field(default=32768)
-    wandb_project: Optional[str] = field(default="BanglaLLM")
+    wandb_project: Optional[str] = field(default="BanglaLLMTrain")
     wandb_entity: Optional[str] = field(default="brishtiteveja")
     train_file_path: Optional[str] = field(default='simplescaling/s1K_tokenized')
     dagger: bool = field(default=False)
